@@ -111,7 +111,7 @@ program burger
     real, allocatable :: u(:)
     integer :: i, unit
 
-    integer :: lrw, liw, mf
+    integer :: lrw, liw, mf, ml, mu
     integer :: neq, itol, itask, istate, iopt
     integer, allocatable ::iwork(:)
 
@@ -123,20 +123,36 @@ program burger
     !
     ! Define problem parameters
     !
-    mf = 10     ! Method flag 
+    ! mf = 10     ! Method flag 
+    ! mf = 22
+    mf = 25
 
     neq = npde*npts ! Number of first order ODEs
     allocate(u(neq))
     
-    lrw = 20 + 16*neq
+    select case(mf)
+    case(10)
+        ! Nonstiff (Adams) method, no Jacobian used
+        lrw = 20 + 16*neq 
+        liw = 20
+    case(22)
+        ! Stiff method, internally generated full Jacobian
+        lrw = 22 + 9*neq + neq**2
+        liw = 20 + neq
+    case(25)
+        ! Stiff method, internally generated banded Jacobian
+        ml = 2*npde-1; mu = 2*npde-1;
+        lrw = 22 + 10*neq + (2*ml + mu)*neq
+        liw = 20 + neq
+    end select
     allocate(rwork(lrw))
-    liw = 20
     allocate(iwork(liw))
+    if (mf == 25) iwork(1:2) = [ml,mu]
 
     itol = 1        ! Scalar absolute eror control
     rtol = 1.e-5    ! Allowed relative error
     atol = 0.0      ! Pure relative error control
-    itask = 1       ! Notmal computation
+    itask = 1       ! Normal computation
     istate = 1      ! First call to the problem
     iopt = 0        ! No optional inputs used
 
@@ -159,8 +175,8 @@ program burger
         call slsode(mypde,neq,u,t,tout,itol,rtol,atol,itask,istate,iopt,rwork,lrw,iwork,liw,jac,mf)
         if (istate /= 2) then
             write(unit,35) istate
-
         end if
+        print *, t, iwork(11), iwork(12), iwork(13)
     end do
 
     close(unit)
