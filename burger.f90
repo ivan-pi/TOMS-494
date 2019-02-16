@@ -112,7 +112,7 @@ program burger
     integer :: i, unit
 
     integer :: lrw, liw, mf, ml, mu
-    integer :: neq, itol, itask, istate, iopt
+    integer :: neq, itol, itask, istate, iopt, nnz, lwm
     integer, allocatable ::iwork(:)
 
     real :: t,tout,rtol,atol
@@ -126,6 +126,7 @@ program burger
     ! mf = 10     ! Method flag 
     ! mf = 22
     mf = 25
+    ! mf = 222 ! SLSODES
 
     neq = npde*npts ! Number of first order ODEs
     allocate(u(neq))
@@ -141,9 +142,14 @@ program burger
         liw = 20 + neq
     case(25)
         ! Stiff method, internally generated banded Jacobian
-        ml = 2*npde-1; mu = 2*npde-1;
+        ml = 2*npde-1; mu = 2*npde-1; ! upper and lower bandwidth
         lrw = 22 + 10*neq + (2*ml + mu)*neq
         liw = 20 + neq
+    ! case(222) ! SLSODES
+    !     nnz = 4*neq ! estimate of non-zero elements in jacobian
+    !     lwm = 2*nnz + 2*neq + (nnz + 10*neq)
+    !     lrw = 20 + 9*neq + lwm
+    !     liw = neq
     end select
     allocate(rwork(lrw))
     allocate(iwork(liw))
